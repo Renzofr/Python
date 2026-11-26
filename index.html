@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Python Aventura: ¡Ayuda a Bit!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Fira+Code:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fff6e0;--card:#ffffff;--ink:#2b2350;--soft:#6a6291;--main:#6c4cf1;--good:#12a36b;--bad:#e5484d;--sun:#ffc533;--code:#1f1b3a;--codeink:#e9e6ff;--line:#e4dcc2;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17132e;--card:#241e47;--ink:#f3f0ff;--soft:#b6aee0;--main:#9a83ff;--good:#3ddc97;--bad:#ff7a7f;--code:#0f0c22;--line:#3a3270;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#17132e;--card:#241e47;--ink:#f3f0ff;--soft:#b6aee0;--main:#9a83ff;--good:#3ddc97;--bad:#ff7a7f;--code:#0f0c22;--line:#3a3270;color-scheme:dark}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:600 17px/1.5 "Baloo 2",system-ui,sans-serif}
+main{max-width:760px;margin:0 auto;padding:16px}
+header{display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap}
+h1{font-size:1.7rem;margin:0;font-weight:800;line-height:1.1}
+.xp{background:var(--card);border:2px solid var(--line);border-radius:999px;padding:4px 14px;font-weight:800}
+.map{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.map button{flex:0 0 auto;width:46px;height:46px;border-radius:50%;border:3px solid var(--line);background:var(--card);color:var(--ink);font:800 1.1rem "Baloo 2";cursor:pointer}
+.map button.done{background:var(--good);border-color:var(--good);color:#fff}
+.map button.now{border-color:var(--main);box-shadow:0 0 0 3px var(--main) inset}
+.map button:disabled{opacity:.45;cursor:not-allowed}
+.card{background:var(--card);border:2px solid var(--line);border-radius:22px;padding:18px}
+.bit{display:flex;gap:14px;align-items:flex-start}
+.face{font-size:3rem;line-height:1;animation:bob 2.4s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-6px)}}
+@media (prefers-reduced-motion:reduce){.face{animation:none}}
+h2{margin:0 0 4px;font-size:1.35rem;font-weight:800}
+p{margin:6px 0}
+.mission{background:var(--sun);color:#3a2a00;border-radius:14px;padding:10px 14px;margin:12px 0;font-weight:800}
+.learn{color:var(--soft);font-size:.95rem}
+code{font-family:"Fira Code",ui-monospace,monospace;background:var(--code);color:var(--codeink);padding:1px 7px;border-radius:7px;font-size:.9em}
+textarea{width:100%;height:170px;resize:vertical;background:var(--code);color:var(--codeink);border:3px solid var(--main);border-radius:14px;padding:12px;font:500 16px/1.5 "Fira Code",ui-monospace,monospace;tab-size:4}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+.btn{border:0;border-radius:14px;padding:10px 18px;font:800 1rem "Baloo 2";cursor:pointer;color:#fff;background:var(--main)}
+.btn.run{background:var(--good);font-size:1.1rem}
+.btn.alt{background:var(--card);color:var(--ink);border:2px solid var(--line)}
+.btn:focus-visible,textarea:focus-visible,.map button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.out{background:var(--code);color:#9dffcf;border-radius:14px;padding:12px;min-height:70px;white-space:pre-wrap;font:500 16px/1.5 "Fira Code",ui-monospace,monospace}
+.msg{margin-top:10px;padding:12px 14px;border-radius:14px;font-weight:800}
+.msg.ok{background:color-mix(in srgb,var(--good) 22%,var(--card));border:2px solid var(--good)}
+.msg.no{background:color-mix(in srgb,var(--bad) 18%,var(--card));border:2px solid var(--bad)}
+.msg.hint{background:color-mix(in srgb,var(--sun) 30%,var(--card));border:2px solid var(--sun)}
+.msg:empty{display:none}
+.win{text-align:center;font-size:1.1rem}.win .face{font-size:5rem}
+.theme{border:2px solid var(--line);background:var(--card);border-radius:999px;width:40px;height:40px;cursor:pointer;font-size:1.1rem}
+</style>
+</head>
+<body>
+<main>
+<header>
+ <h1>🐍 Python Aventura</h1>
+ <span class="xp" id="xp">⭐ 0</span>
+</header>
+<nav class="map" id="map" aria-label="Niveles"></nav>
+<section class="card" id="game"></section>
+</main>
+<script>
+// ---- Mini traductor de Python básico a JavaScript (corre todo en tu navegador) ----
+function ex(s){s=s.replace(/\bf"([^"]*)"/g,(m,a)=>'`'+a.replace(/\{/g,'${')+'`').replace(/\bf'([^']*)'/g,(m,a)=>'`'+a.replace(/\{/g,'${')+'`');return s.split(/("[^"]*"|'[^']*'|`[^`]*`)/).map((p,i)=>i%2?p:p.replace(/\.append\(/g,'.push(').replace(/\.upper\(\)/g,'.toUpperCase()').replace(/\.lower\(\)/g,'.toLowerCase()').replace(/\band\b/g,'&&').replace(/\bor\b/g,'||').replace(/\bnot\b/g,'!').replace(/\bTrue\b/g,'true').replace(/\bFalse\b/g,'false')).join('')}
+function tr(code){
+ let js='',st=[];
+ for(const raw of code.replace(/\t/g,'    ').split('\n')){
+  let t=raw.trim(); if(!t||t[0]==='#')continue;
+  const ind=raw.match(/^ */)[0].length;
+  while(st.length&&ind<=st[st.length-1]){st.pop();js+='}\n'}
+  let m;
+  if(m=t.match(/^for (\w+) in (.+):$/)){js+='for(var '+m[1]+' of '+ex(m[2])+'){\n';st.push(ind)}
+  else if(m=t.match(/^while (.+):$/)){js+='while(('+ex(m[1])+')&&g()){\n';st.push(ind)}
+  else if(m=t.match(/^if (.+):$/)){js+='if('+ex(m[1])+'){\n';st.push(ind)}
+  else if(m=t.match(/^elif (.+):$/)){js+='else if('+ex(m[1])+'){\n';st.push(ind)}
+  else if(t==='else:'){js+='else{\n';st.push(ind)}
+  else if(m=t.match(/^def (\w+)\((.*)\):$/)){js+='function '+m[1]+'('+m[2]+'){\n';st.push(ind)}
+  else if(m=t.match(/^(\w+)\s*([+\-*]?=)\s*(?!=)(.+)$/)){js+=(m[2]==='='?'var ':'')+m[1]+' '+m[2]+' '+ex(m[3])+';\n'}
+  else js+=ex(t)+';\n';
+ }
+ while(st.length){st.pop();js+='}\n'}
+ return js;
+}
+function run(code){
+ const out=[];let n=0;
+ const show=v=>v===true?'True':v===false?'False':String(v);
+ const api={print:(...a)=>out.push(a.map(show).join(' ')),
+  range:(a,b,c=1)=>{if(b===undefined){b=a;a=0}const r=[];for(let i=a;(c>0?i<b:i>b)&&r.length<1000;i+=c)r.push(i);return r},
+  str:String,int:v=>parseInt(v),len:v=>v.length,g:()=>{if(++n>2000)throw new Error('loop');return true}};
+ try{new Function(...Object.keys(api),tr(code))(...Object.values(api));return{out}}
+ catch(e){
+  let m='Uy, algo no está bien escrito. Revisa comillas, paréntesis y los dos puntos (:).';
+  if(e.message==='loop')m='Tu bucle nunca termina. ¿Falta cambiar el número dentro del while?';else if(e instanceof ReferenceError)m='No conozco la palabra «'+(e.message.split(' ')[0])+'». ¿La escribiste igual que antes? Python distingue mayúsculas.';
+  return{out,err:m}}
+}
+// ---- Niveles ----
+const L=[
+{t:'Despierta a Bit',s:'¡Bit, el robot, está dormido! Solo despierta si le dices hola.',a:'print() sirve para mostrar cosas en pantalla. Lo que va entre comillas es texto.',m:'Haz que Bit diga Hola mundo.',c:'print("Hola mundo")',h:'Escribe: print("Hola mundo") con las comillas.',k:(o)=>/hola/i.test(o.join(' '))},
+{t:'La mochila de nombres',s:'Bit guarda cosas en cajas con etiqueta. A esas cajas se les llama variables.',a:'nombre = "Ana" guarda Ana en una caja llamada nombre. Luego print(nombre) la muestra.',m:'Guarda TU nombre en la variable nombre y muéstralo.',c:'nombre = "Ana"\nprint(nombre)',h:'Cambia Ana por tu nombre. No toques el resto.',k:(o,c)=>/nombre\s*=/.test(c)&&o.length==1&&o[0].length>0&&o[0]!=='Ana'},
+{t:'Calculadora de arañas',s:'Bit vio 7 arañas. ¡Cada una tiene 8 patas! ¿Cuántas patas hay en total?',a:'Python hace cuentas: + suma, - resta, * multiplica, / divide.',m:'Haz que Python calcule 7 por 8 y lo muestre.',c:'print(7 + 7)',h:'Cambia el + por * y el segundo 7 por 8.',k:o=>o.join('')==='56'},
+{t:'Palabras pegadas',s:'Bit quiere saludar por su nombre. ¡Pega palabras con el signo +!',a:'"Hola " + nombre pega dos textos. Cuidado con el espacio dentro de las comillas.',m:'Haz que se muestre: Hola, Luna',c:'nombre = "Luna"\nprint("Hola" + nombre)',h:'Falta una coma y un espacio: "Hola, " (con el espacio antes de cerrar comillas).',k:o=>o.join('')==='Hola, Luna'},
+{t:'El salto repetido',s:'Bit tiene que saltar 3 veces, ¡pero es perezoso para escribir!',a:'for _ in range(3): repite lo que está debajo 3 veces. Lo repetido lleva 4 espacios al inicio.',m:'Haz que Bit diga ¡Salto! exactamente 3 veces.',c:'for i in range(5):\n    print("¡Salto!")',h:'Cambia el 5 por un 3.',k:o=>o.length==3&&o.every(x=>/salto/i.test(x))},
+{t:'Cuenta regresiva',s:'¡Despegue! Bit necesita contar del 1 al 5.',a:'range(1, 6) va de 1 hasta 5 (el último número no se incluye). La variable i va cambiando sola.',m:'Muestra los números 1, 2, 3, 4, 5, uno por línea.',c:'for i in range(0, 3):\n    print(i)',h:'Usa range(1, 6).',k:o=>o.join(',')==='1,2,3,4,5'},
+{t:'El portero del castillo',s:'El portero solo deja pasar a quien tenga más de 10 puntos.',a:'if pregunta algo. Si es verdad hace una cosa, y si no (else) hace otra.',m:'Cambia los puntos para que Bit gane y diga ¡Ganaste!',c:'puntos = 4\nif puntos > 10:\n    print("¡Ganaste!")\nelse:\n    print("Sigue practicando")',h:'Pon un número mayor que 10 en puntos.',k:o=>/ganaste/i.test(o.join(' '))},
+{t:'Jefe del bosque: números pares',s:'El Jefe del bosque solo se asusta de los números pares (2, 4, 6, 8, 10). ¡Úsalos todos!',a:'i % 2 == 0 es verdad cuando i es par. Junta for e if.',m:'Muestra solo los pares del 1 al 10, uno por línea.',c:'for i in range(1, 11):\n    # tu código aquí\n    print(i)',h:'Dentro del for escribe: if i % 2 == 0: y mete el print dentro con 8 espacios.',k:o=>o.join(',')==='2,4,6,8,10'},
+{t:'Sumas que crecen',s:'Bit junta puntos de energía y quiere subirlos.',a:'Una variable puede cambiar: `puntos = puntos + 3` le suma 3 a lo que ya tenía.',m:'Haz que al final se muestre 20.',c:'puntos = 5\npuntos = puntos + 3\nprint(puntos)',h:'Cambia el 3 por un 15.',k:o=>o.join('')==='20'},
+{t:'Monedas mágicas',s:'Bit encuentra monedas en el camino. ¡Cada una suma!',a:'`monedas += 5` es una forma corta de escribir `monedas = monedas + 5`.',m:'Empieza con 10 monedas, gana 5 y luego 10 más. Muestra 25.',c:'monedas = 10\nmonedas += 5\nprint(monedas)',h:'Agrega otra línea: monedas += 10 antes del print.',k:(o,c)=>o.join('')==='25'&&/\+=/.test(c)},
+{t:'Torre gigante',s:'Cada piso de la torre tiene el doble de cuartos que el anterior.',a:'`2 ** 5` significa 2 elevado a 5, o sea 2×2×2×2×2.',m:'Calcula 2 elevado a la 5 y muéstralo.',c:'print(2 * 5)',h:'Usa dos asteriscos: 2 ** 5',k:o=>o.join('')==='32'},
+{t:'Galletas sobrantes',s:'Bit reparte 17 galletas entre 5 amigos. ¿Cuántas sobran?',a:'`%` da lo que sobra de una división. Por ejemplo, `10 % 3` es 1.',m:'Muestra cuántas galletas sobran al repartir 17 entre 5.',c:'print(17 / 5)',h:'Cambia la / por un %.',k:o=>o.join('')==='2'},
+{t:'Números con texto',s:'Bit quiere decir su edad en voz alta.',a:'Para pegar un número con texto usa `str()`: `"Tengo " + str(edad)`.',m:'Muestra: Tengo 11 años',c:'edad = 11\nprint("Tengo " + edad + " años")',h:'Envuelve edad así: str(edad).',k:(o,c)=>o.join('')==='Tengo 11 años'&&/str\(/.test(c)},
+{t:'Frases mágicas',s:'Bit quiere frases con datos adentro, sin tanto +.',a:'Una f-string mete variables en el texto: `f"Hola {nombre}"`. Lleva una f antes de las comillas.',m:'Muestra: Luna tiene 11 años usando las variables.',c:'nombre = "Luna"\nedad = 11\nprint("nombre tiene edad años")',h:'Escribe print(f"{nombre} tiene {edad} años").',k:(o,c)=>o.join('')==='Luna tiene 11 años'&&/f["']/.test(c)},
+{t:'El grito del dragón',s:'Bit quiere gritar para despertar al dragón.',a:'`.upper()` pasa un texto a MAYÚSCULAS y `.lower()` a minúsculas.',m:'Haz que Bit grite HOLA.',c:'print("hola")',h:'Escribe print("hola".upper()).',k:o=>o.join('')==='HOLA'},
+{t:'Contar letras',s:'La palabra secreta abre la puerta, pero Bit debe saber su largo.',a:'`len()` cuenta cuántas letras (o elementos) hay.',m:'Muestra cuántas letras tiene la palabra.',c:'palabra = "murcielago"\nprint(palabra)',h:'Escribe print(len(palabra)).',k:(o,c)=>o.join('')==='10'&&/len\(/.test(c)},
+{t:'Verdadero o falso',s:'El detector de Bit responde True (verdadero) o False (falso).',a:'Comparar con `>` o `==` da True o False. Ojo: `==` compara y `=` guarda.',m:'Haz que Python responda True.',c:'print(2 > 9)',h:'Cambia los números, por ejemplo 9 > 2.',k:o=>o.join('')==='True'},
+{t:'Ropa para el clima',s:'Bit elige su ropa según la temperatura.',a:'`elif` agrega más opciones entre el if y el else.',m:'Cambia la temperatura para que Bit diga Chompa.',c:'temperatura = 30\nif temperatura > 25:\n    print("Camiseta")\nelif temperatura > 10:\n    print("Chompa")\nelse:\n    print("Abrigo")',h:'Pon un número entre 11 y 25.',k:o=>o.join('')==='Chompa'},
+{t:'Dos condiciones',s:'Para entrar al cine, Bit necesita edad suficiente Y entrada.',a:'`and` pide que las dos cosas sean verdad. `or` pide que al menos una lo sea.',m:'Haz que Bit pueda entrar.',c:'edad = 8\nentrada = True\nif edad >= 10 and entrada:\n    print("Puede entrar")\nelse:\n    print("No puede")',h:'Cambia la edad a 10 o más.',k:o=>o.join('')==='Puede entrar'},
+{t:'Despegue con while',s:'Bit cuenta hacia atrás para lanzar el cohete.',a:'`while` repite mientras algo sea verdad. ¡Cuida que cambie, o nunca termina!',m:'Muestra 3, 2, 1 y luego ¡Fuego!',c:'n = 3\nwhile n > 0:\n    print(n)\nprint("¡Fuego!")',h:'Dentro del while falta la línea: n = n - 1 (con 4 espacios).',k:o=>o.join(',')==='3,2,1,¡Fuego!'},
+{t:'Suma del 1 al 10',s:'Bit suma todos los números del 1 al 10 para abrir la cerradura.',a:'Una variable acumuladora guarda la suma: `total += i` dentro del for.',m:'Muestra la suma de 1 hasta 10.',c:'total = 0\nfor i in range(1, 4):\n    total += i\nprint(total)',h:'Cambia range(1, 4) por range(1, 11).',k:o=>o.join('')==='55'},
+{t:'La tabla del 3',s:'Bit practica la tabla de multiplicar del 3.',a:'Dentro del for puedes hacer cuentas con la variable `i`.',m:'Muestra 3, 6, 9, 12 y 15, uno por línea.',c:'for i in range(1, 6):\n    print(i)',h:'En vez de print(i) escribe print(3 * i).',k:o=>o.join(',')==='3,6,9,12,15'},
+{t:'Cuenta al revés',s:'El cohete necesita otra cuenta regresiva, ahora con for.',a:'`range(10, 0, -1)` cuenta hacia atrás: el tercer número es el paso.',m:'Muestra 5, 4, 3, 2, 1.',c:'for i in range(1, 6):\n    print(i)',h:'Usa range(5, 0, -1).',k:o=>o.join(',')==='5,4,3,2,1'},
+{t:'La mochila de frutas',s:'Bit guarda varias frutas en una lista.',a:'Una lista usa corchetes: `["a", "b"]`. El primero está en la posición 0: `lista[0]`.',m:'Muestra la pera.',c:'frutas = ["manzana", "pera", "uva"]\nprint(frutas[0])',h:'La pera es la segunda: su posición es 1.',k:o=>o.join('')==='pera'},
+{t:'Nuevos amigos',s:'Bit hace una lista de amigos y llega uno más.',a:'`.append("Sofi")` agrega un elemento al final de la lista.',m:'Agrega a Sofi y muestra cuántos amigos hay (3).',c:'amigos = ["Ana", "Luis"]\nprint(len(amigos))',h:'Antes del print escribe: amigos.append("Sofi").',k:(o,c)=>o.join('')==='3'&&/append/.test(c)},
+{t:'Recorrer la lista',s:'Bit quiere decir qué le gusta de cada fruta.',a:'`for fruta in frutas:` toma un elemento de la lista en cada vuelta.',m:'Muestra tres líneas: Me gusta manzana, Me gusta pera, Me gusta uva.',c:'frutas = ["manzana", "pera", "uva"]\nfor fruta in frutas:\n    print(fruta)',h:'Escribe print("Me gusta " + fruta).',k:o=>o.join('|')==='Me gusta manzana|Me gusta pera|Me gusta uva'},
+{t:'Mi primera función',s:'Bit quiere un botón que haga algo cada vez que lo pulsa.',a:'`def` crea una función. Para usarla, la llamas por su nombre con paréntesis.',m:'Llama a la función para que Bit diga ¡Hola! una sola vez.',c:'def saludar():\n    print("¡Hola!")\n',h:'Al final escribe saludar() pegado al borde izquierdo.',k:o=>o.join('|')==='¡Hola!'},
+{t:'Función que devuelve',s:'Bit tiene una máquina de dobles, pero está rota.',a:'`return` devuelve un resultado para usarlo después.',m:'Arréglala para que doble(21) muestre 42.',c:'def doble(n):\n    return n + 2\nprint(doble(21))',h:'Cambia el + por *.',k:o=>o.join('')==='42'},
+{t:'El número mayor',s:'Bit tiene una función para elegir el número más grande, pero siempre elige el primero.',a:'Una función puede usar `if` y `return` juntos para decidir.',m:'Arréglala para que mayor(7, 12) muestre 12.',c:'def mayor(a, b):\n    if a > b:\n        return a\n    else:\n        return a\nprint(mayor(7, 12))',h:'En el else debe devolver b.',k:o=>o.join('')==='12'},
+{t:'Jefe final: Pum y Pam',s:'El Rey de los Bugs solo se rinde con un conjuro de números.',a:'Junta todo: for, if, elif, else y el resto `%`.',m:'Muestra del 1 al 15. Si es múltiplo de 3 di Pum, si es de 5 di Pam y si es de ambos di PumPam.',c:'for i in range(1, 16):\n    print(i)',h:'Revisa primero el caso de ambos (i % 3 == 0 and i % 5 == 0), luego usa elif y al final else.',k:o=>o.join(',')===Array.from({length:15},(_,k)=>{const i=k+1;return i%15==0?'PumPam':i%3==0?'Pum':i%5==0?'Pam':i}).join(',')}
+];
+let cur=0,done=new Set(),xp=0;
+try{const d=JSON.parse(localStorage.getItem('pyaventura')||'null');if(d){done=new Set(d.d);cur=Math.min(d.c,L.length);xp=d.x}}catch(e){}
+function save(){try{localStorage.setItem('pyaventura',JSON.stringify({d:[...done],c:cur,x:xp}))}catch(e){}}
+const $=id=>document.getElementById(id);
+function map(){
+ $('map').innerHTML=L.map((l,i)=>`<button class="${done.has(i)?'done':''} ${i===cur?'now':''}" ${i>cur&&!done.has(i)?'disabled':''} onclick="go(${i})" aria-label="Nivel ${i+1}">${done.has(i)?'✓':i+1}</button>`).join('');
+ $('xp').textContent='⭐ '+xp;
+}
+function go(i){cur=i;draw()}
+function draw(){
+ map();
+ if(cur>=L.length){$('game').innerHTML=`<div class="win"><div class="face">🏆</div><h2>¡Lo lograste, programador!</h2><p>Bit ya está despierto y feliz. Aprendiste print, variables, cuentas, textos, bucles, condiciones, listas y funciones. ¡Eso es programar de verdad!</p><p>⭐ ${xp} estrellas</p><button class="btn" onclick="reset()">Jugar otra vez</button></div>`;return}
+ const l=L[cur];
+ $('game').innerHTML=`<div class="bit"><div class="face">🤖</div><div><h2>Nivel ${cur+1}: ${l.t}</h2><p>${l.s}</p></div></div>
+ <p class="learn">💡 ${l.a.replace(/(print\(\)|print\(nombre\)|for _ in range\(3\):|range\(1, 6\)|i % 2 == 0|nombre = "Ana"|"Hola " \+ nombre)/g,'<code>$1</code>').replace(/\x60([^\x60]+)\x60/g,'<code>$1</code>')}</p>
+ <div class="mission">🎯 Misión: ${l.m}</div>
+ <textarea id="ed" spellcheck="false" aria-label="Escribe tu código Python"></textarea>
+ <div class="row"><button class="btn run" onclick="go_run()">▶ Ejecutar</button><button class="btn alt" onclick="hint()">💡 Pista</button><button class="btn alt" onclick="again()">↺ Empezar de nuevo</button></div>
+ <div class="out" id="out" aria-live="polite">La respuesta de Bit aparecerá aquí…</div>
+ <div class="msg" id="msg"></div>`;
+ const ed=$('ed');ed.value=l.c;
+ ed.addEventListener('keydown',e=>{if(e.key==='Tab'){e.preventDefault();const s=ed.selectionStart;ed.setRangeText('    ',s,ed.selectionEnd,'end')}});
+}
+function again(){$('ed').value=L[cur].c;$('msg').className='msg';$('msg').textContent=''}
+function hint(){$('msg').className='msg hint';$('msg').textContent='💡 '+L[cur].h}
+function go_run(){
+ const l=L[cur],code=$('ed').value,r=run(code),m=$('msg');
+ $('out').textContent=r.out.length?r.out.join('\n'):'(Bit no dijo nada)';
+ if(r.err){m.className='msg no';m.textContent='🤔 '+r.err;return}
+ if(l.k(r.out,code)){
+  const first=!done.has(cur);if(first){done.add(cur);xp+=10}
+  m.className='msg ok';m.innerHTML='🎉 ¡Correcto!'+(first?' +10 estrellas. ':' ')+'<button class="btn" style="margin-left:8px" onclick="next()">'+(cur===L.length-1?'Terminar':'Siguiente nivel')+'</button>';
+  map();save();
+ }else{m.className='msg no';m.textContent='Casi… No es lo que Bit esperaba. Lee la misión otra vez o pulsa Pista. ¡Tú puedes!'}
+}
+function next(){cur++;save();draw()}
+function reset(){done=new Set();cur=0;xp=0;save();draw()}
+draw();
+</script>
+</body>
+</html>
